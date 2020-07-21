@@ -1,0 +1,52 @@
+version: "3.7"
+services:
+  spring:
+    build:
+      context: ../api/spring/bookshop
+      dockerfile: ./DockerFile
+    restart: always
+    ports:
+      - 8080:8080
+    networks:
+      - bookshop
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    depends_on:
+      - db
+  db:
+    container_name: db
+    restart: always
+    image: mysql
+    networks:
+      - bookshop
+    healthcheck:
+     test: "/usr/bin/mysql --user=root --password=mysql --execute \"SHOW DATABASES;\""
+     interval: 2s
+     timeout: 20s
+     retries: 10
+    environment:
+      - MYSQL_ROOT_PASSWORD=mysql
+      - MYSQL_DATABASE=db_bookshop
+    command: --secure-file-priv=images
+
+    volumes:
+      - ./db/data:/var/lib/mysql
+      - ./db/images:/images
+      - ./db/init:/docker-entrypoint-initdb.d/init:ro
+      
+  react:
+    build:
+      context: ../react/bookshop
+      dockerfile: ./DockerFile.prod
+      args:
+        REACT_APP_API_BASE_URL: http://127.0.0.1:8080/
+    restart: always
+    ports:
+      - 3000:3000
+    networks:
+      - bookshop
+    depends_on:
+      - spring
+
+networks:
+  bookshop:
