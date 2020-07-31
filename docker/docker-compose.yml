@@ -39,14 +39,17 @@ services:
       context: ../react/bookshop
       dockerfile: ./DockerFile.prod
       args:
-        REACT_APP_API_BASE_URL: https://127.0.0.1:8443/
+        REACT_APP_API_URL: https://byousefi.ir:8443
     restart: always
     ports:
-      - 3000:3000
+      - 443:443
     networks:
       - bookshop
     depends_on:
       - spring
+      
+    volumes:
+      - ../react/bookshop/ssl:/etc/ssl
 
 networks:
   bookshop:
