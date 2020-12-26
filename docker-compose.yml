@@ -1,24 +1,23 @@
 version: "3.7"
-services:
-  spring:
-    build:
-      context: ../api/spring/bookshop
-      dockerfile: ./DockerFile
+services:   
+  bookshop-spring:
+    container_name: bookshop_spring
+    image: bookshop-spring
     restart: always
     ports:
       - 8443:8443
     networks:
-      - bookshop
+      - nginx
     environment:
       - SPRING_PROFILES_ACTIVE=prod
     depends_on:
-      - db
+      - db   
   db:
     container_name: db
     restart: always
     image: mysql
     networks:
-      - bookshop
+      - nginx
     healthcheck:
      test: "/usr/bin/mysql --user=root --password=mysql --execute \"SHOW DATABASES;\""
      interval: 2s
@@ -27,6 +26,7 @@ services:
     environment:
       - MYSQL_ROOT_PASSWORD=mysql
       - MYSQL_DATABASE=db_bookshop
+      - MYSQL_ROOT_HOST=127.0.0.1
     command: --secure-file-priv=images
 
     volumes:
@@ -34,22 +34,36 @@ services:
       - ./db/images:/images
       - ./db/init:/docker-entrypoint-initdb.d/init:ro
       
-  react:
-    build:
-      context: ../react/bookshop
-      dockerfile: ./DockerFile.prod
-      args:
-        REACT_APP_API_URL: https://byousefi.ir:8443
+  bookshop-react:
+    image: bookshop-react       
+    container_name: bookshop_react
+    restart: always
+    networks:
+      - nginx
+      
+  portfolio:
+    container_name:  portfolio_react
+    image: portfolio
+    restart: always
+    networks:
+      - nginx
+      
+  gateway:
+    image: gateway
+    container_name: gateway
     restart: always
     ports:
+      - 80:80
       - 443:443
     networks:
-      - bookshop
+      - nginx
     depends_on:
-      - spring
-      
+      - portfolio
+      - bookshop-react
+      - bookshop-spring
     volumes:
-      - ../react/bookshop/ssl:/etc/ssl
+      - ./byousefi/ssl:/etc/ssl
+      
 
 networks:
-  bookshop:
+  nginx:
